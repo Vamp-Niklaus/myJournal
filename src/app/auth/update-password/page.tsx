@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase/client';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +16,7 @@ export default function UpdatePassword() {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password) {
-      alert('Please enter a new password.');
+      toast.error('Password Required', { description: 'Please enter a new password.' });
       return;
     }
     
@@ -27,9 +28,9 @@ export default function UpdatePassword() {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      toast.error('Failed to update password', { description: error.message });
     } else {
-      alert('Password updated successfully!');
+      toast.success('Password updated successfully!');
       router.push('/');
     }
   };
@@ -57,7 +58,7 @@ export default function UpdatePassword() {
             <Button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-white text-black hover:bg-zinc-200"
+              className="w-full bg-white text-black hover:bg-zinc-200 !cursor-pointer"
             >
               {loading ? 'Updating...' : 'Update Password'}
             </Button>

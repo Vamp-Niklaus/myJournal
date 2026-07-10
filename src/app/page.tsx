@@ -12,6 +12,7 @@ import { AssetOrganizer } from '@/components/modules/AssetOrganizer';
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 
 function AppContent() {
   const [session, setSession] = useState<any>(null);
@@ -77,11 +78,13 @@ function AppContent() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      alert('Please enter both email and password.');
+      toast.error('Please enter both email and password.', {
+        description: 'Both fields are required to sign in.'
+      });
       return;
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert(error.message);
+    if (error) toast.error('Sign in failed', { description: error.message });
   };
 
   const handleGoogleSignIn = async () => {
@@ -91,21 +94,24 @@ function AppContent() {
         redirectTo: `${window.location.origin}/`,
       },
     });
-    if (error) alert(error.message);
+    if (error) toast.error('Google sign in failed', { description: error.message });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      alert('Please enter both email and password.');
+      toast.error('Please enter both email and password.', {
+        description: 'Both fields are required to sign up.'
+      });
       return;
     }
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
-      alert(error.message);
+      toast.error('Sign up failed', { description: error.message });
     } else {
       setIsAwaitingConfirmation(true);
       setResendTimer(120);
+      toast.success('Account created!', { description: 'Please check your email to confirm your account.' });
     }
   };
 
@@ -119,23 +125,24 @@ function AppContent() {
       }
     });
     if (error) {
-      alert(error.message);
+      toast.error('Failed to resend email', { description: error.message });
     } else {
       setResendTimer(120);
+      toast.success('Confirmation email resent!');
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      alert('Please enter your email address first.');
+      toast.error('Email required', { description: 'Please enter your email address first.' });
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/update-password`,
     });
-    if (error) alert(error.message);
-    else alert('Password reset instructions sent to your email!');
+    if (error) toast.error('Reset failed', { description: error.message });
+    else toast.success('Email sent!', { description: 'Password reset instructions sent to your email.' });
   };
 
   if (loading) {
@@ -161,12 +168,12 @@ function AppContent() {
                 <Button 
                   onClick={handleResendEmail} 
                   disabled={resendTimer > 0}
-                  className="w-full bg-white text-black hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500"
+                  className="w-full bg-white text-black hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 !cursor-pointer"
                 >
                   {resendTimer > 0 ? `Resend email in ${Math.floor(resendTimer / 60)}:${(resendTimer % 60).toString().padStart(2, '0')}` : 'Resend Email'}
                 </Button>
                 <div className="flex justify-center pt-2">
-                  <button type="button" onClick={() => setIsAwaitingConfirmation(false)} className="text-sm text-zinc-400 hover:text-white transition-colors">
+                  <button type="button" onClick={() => setIsAwaitingConfirmation(false)} className="text-sm text-zinc-400 hover:text-white transition-colors !cursor-pointer">
                     Back to login
                   </button>
                 </div>
@@ -183,7 +190,7 @@ function AppContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-4">
+                <form className="space-y-4" onSubmit={isForgotPassword ? handleResetPassword : isSignUpMode ? handleSignUp : handleSignIn}>
                   {isForgotPassword ? (
                     <>
                       <div className="space-y-2">
@@ -197,8 +204,8 @@ function AppContent() {
                         />
                       </div>
                       <div className="flex flex-col gap-3 pt-2">
-                        <Button onClick={handleResetPassword} className="w-full bg-white text-black hover:bg-zinc-200">Send Reset Link</Button>
-                        <button type="button" onClick={() => setIsForgotPassword(false)} className="text-sm text-zinc-400 hover:text-white transition-colors">Back to login</button>
+                        <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 !cursor-pointer">Send Reset Link</Button>
+                        <button type="button" onClick={() => setIsForgotPassword(false)} className="text-sm text-zinc-400 hover:text-white transition-colors !cursor-pointer">Back to login</button>
                       </div>
                     </>
                   ) : (
@@ -223,21 +230,21 @@ function AppContent() {
                       </div>
                       {!isSignUpMode && (
                         <div className="flex justify-end">
-                          <button type="button" onClick={() => setIsForgotPassword(true)} className="text-xs text-zinc-400 hover:text-white transition-colors">Forgot Password?</button>
+                          <button type="button" onClick={() => setIsForgotPassword(true)} className="text-xs text-zinc-400 hover:text-white transition-colors !cursor-pointer">Forgot Password?</button>
                         </div>
                       )}
                       <div className="flex flex-col gap-3 pt-2">
                         {isSignUpMode ? (
-                          <Button onClick={handleSignUp} className="w-full bg-white text-black hover:bg-zinc-200">Create Account</Button>
+                          <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 !cursor-pointer">Create Account</Button>
                         ) : (
-                          <Button onClick={handleSignIn} className="w-full bg-white text-black hover:bg-zinc-200">Sign In</Button>
+                          <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 !cursor-pointer">Sign In</Button>
                         )}
                       </div>
                       <div className="flex justify-center mt-2">
                         <button 
                           type="button" 
                           onClick={() => setIsSignUpMode(!isSignUpMode)} 
-                          className="text-xs text-zinc-400 hover:text-white transition-colors"
+                          className="text-xs text-zinc-400 hover:text-white transition-colors !cursor-pointer"
                         >
                           {isSignUpMode ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
                         </button>
@@ -250,7 +257,7 @@ function AppContent() {
                           <span className="bg-zinc-900 px-2 text-zinc-500">Or continue with</span>
                         </div>
                       </div>
-                      <Button type="button" onClick={handleGoogleSignIn} variant="outline" className="w-full border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700 hover:text-white">
+                      <Button type="button" onClick={handleGoogleSignIn} variant="outline" className="w-full border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700 hover:text-white !cursor-pointer">
                         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                           <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -310,7 +317,7 @@ function AppContent() {
         
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-4">
           <span className="text-xs md:text-sm text-zinc-400 hidden sm:inline-block truncate max-w-[150px] md:max-w-xs">{session.user.email}</span>
-          <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()} className="text-zinc-400 hover:text-white px-2 md:px-3">
+          <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()} className="!cursor-pointer text-zinc-400 hover:text-white hover:bg-zinc-800 px-2 md:px-3 bg-transparent">
             <span className="hidden sm:inline">Sign out</span>
             <span className="sm:hidden">Exit</span>
           </Button>
