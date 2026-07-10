@@ -15,6 +15,11 @@ export function MonacoEditor({ initialContent = '', isReadOnly = false, onChange
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const currentContentRef = React.useRef(initialContent);
   
+  const onChangeRef = React.useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   // Clean up timeout on unmount
   useEffect(() => {
     if (monaco) {
@@ -33,7 +38,12 @@ export function MonacoEditor({ initialContent = '', isReadOnly = false, onChange
     }
     
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        if (onChangeRef.current) {
+          onChangeRef.current(currentContentRef.current);
+        }
+      }
     };
   }, [monaco]);
 
