@@ -42,7 +42,8 @@ function AppContent() {
 
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason && event.reason.type === 'cancelation') {
+      // Prevent Next.js overlay from crashing on object rejections (e.g. Monaco editor cancelation)
+      if (event.reason && typeof event.reason === 'object' && !(event.reason instanceof Error)) {
         event.preventDefault();
       }
     };
