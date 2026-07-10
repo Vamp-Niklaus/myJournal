@@ -69,6 +69,7 @@ export function AssetOrganizer() {
   const currentFolderId = searchParams.get('folder') || 'root';
   
   const setCurrentFolderId = (folderId: string) => {
+    setViewingNoteId(null);
     const current = new URLSearchParams(Array.from(searchParams.entries()));
     current.set('folder', folderId);
     router.push(`${pathname}?${current.toString()}`);
