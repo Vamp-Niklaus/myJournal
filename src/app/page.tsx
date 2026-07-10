@@ -45,9 +45,10 @@ function AppContent() {
       // Prevent Next.js overlay from crashing on object rejections (e.g. Monaco editor cancelation)
       if (event.reason && typeof event.reason === 'object' && !(event.reason instanceof Error)) {
         event.preventDefault();
+        event.stopImmediatePropagation();
       }
     };
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection, true);
     
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -63,7 +64,7 @@ function AppContent() {
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection, true);
     };
   }, []);
 
