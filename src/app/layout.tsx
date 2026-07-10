@@ -30,6 +30,20 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && typeof event.reason === 'object' && !(event.reason instanceof Error)) {
+                  event.preventDefault();
+                  event.stopImmediatePropagation();
+                }
+              }, true);
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
           {children}

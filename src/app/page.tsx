@@ -87,7 +87,7 @@ function AppContent() {
       return;
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) toast.error('Sign in failed', { description: error.message });
+    if (error) toast.error(`Sign in failed: ${error.message}`);
   };
 
   const handleGoogleSignIn = async () => {
@@ -97,7 +97,7 @@ function AppContent() {
         redirectTo: `${window.location.origin}/`,
       },
     });
-    if (error) toast.error('Google sign in failed', { description: error.message });
+    if (error) toast.error(`Google sign in failed: ${error.message}`);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -110,7 +110,7 @@ function AppContent() {
     }
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
-      toast.error('Sign up failed', { description: error.message });
+      toast.error(`Sign up failed: ${error.message}`);
     } else {
       setIsAwaitingConfirmation(true);
       setResendTimer(120);
@@ -128,7 +128,7 @@ function AppContent() {
       }
     });
     if (error) {
-      toast.error('Failed to resend email', { description: error.message });
+      toast.error(`Failed to resend email: ${error.message}`);
     } else {
       setResendTimer(120);
       toast.success('Confirmation email resent!');
@@ -144,7 +144,7 @@ function AppContent() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/update-password`,
     });
-    if (error) toast.error('Reset failed', { description: error.message });
+    if (error) toast.error(`Reset failed: ${error.message}`);
     else toast.success('Email sent!', { description: 'Password reset instructions sent to your email.' });
   };
 
