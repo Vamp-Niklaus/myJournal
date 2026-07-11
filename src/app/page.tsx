@@ -55,15 +55,75 @@ function AppContent() {
     window.addEventListener('unhandledrejection', handleUnhandledRejection, true);
     
     const fetchCloudData = async (userId: string) => {
-      const { data, error } = await supabase
-        .from('user_data')
-        .select('app_state')
-        .eq('id', userId)
-        .single();
-      if (data && data.app_state) {
-        setFullState(data.app_state);
-      } else if (error && error.code !== 'PGRST116') {
-        console.error("Failed to fetch cloud data:", error);
+      try {
+        const [fsRes, notesRes, diaryRes] = await Promise.all([
+          supabase.from('file_system').select('*').eq('user_id', userId),
+          supabase.from('notes').select('*').eq('user_id', userId),
+          supabase.from('diary_entries').select('*').eq('user_id', userId)
+        ]);
+
+        if (fsRes.error) console.error(fsRes.error);
+        if (notesRes.error) console.error(notesRes.error);
+        if (diaryRes.error) console.error(diaryRes.error);
+
+        const newFs: any = {
+          'root': { id: 'root', name: 'Root', type: 'folder', parentId: null, childrenIds: [], synced: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          'trash': { id: 'trash', name: 'Trash', type: 'folder', parentId: null, childrenIds: [], synced: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        };
+
+        if (fsRes.data) {
+          fsRes.data.forEach(row => {
+            newFs[row.id] = {
+              id: row.id,
+              name: row.name,
+              type: row.type,
+              parentId: row.parent_id,
+              childrenIds: row.children_ids || [],
+              url: row.url || undefined,
+              remark: row.remark || undefined,
+              contentId: row.content_id || undefined,
+              originalParentId: row.original_parent_id || undefined,
+              synced: row.synced,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            };
+          });
+        }
+
+        const newNotes: any = {};
+        if (notesRes.data) {
+          notesRes.data.forEach(row => {
+            newNotes[row.id] = {
+              id: row.id,
+              title: row.title,
+              content: row.content || '',
+              synced: row.synced,
+              updatedAt: row.updated_at,
+            };
+          });
+        }
+
+        const newDiary: any = {};
+        if (diaryRes.data) {
+          diaryRes.data.forEach(row => {
+            newDiary[row.id] = {
+              id: row.id,
+              title: row.title,
+              content: row.content || '',
+              synced: row.synced,
+              updatedAt: row.updated_at,
+            };
+          });
+        }
+
+        setFullState({
+          fileSystem: newFs,
+          notes: newNotes,
+          diaryEntries: newDiary,
+        });
+
+      } catch (err) {
+        console.error("Failed to fetch cloud data:", err);
       }
     };
 
@@ -93,35 +153,19 @@ function AppContent() {
     };
   }, []);
 
-  // Sync to cloud on state changes
+  // Background retry for unsynced items
   useEffect(() => {
     if (!session?.user?.id) return;
     
-    let debounceTimer: NodeJS.Timeout;
-    const unsubscribe = useAppStore.subscribe((state) => {
-      const syncData = {
-        fileSystem: state.fileSystem,
-        notes: state.notes,
-        diaryEntries: state.diaryEntries,
-      };
+    const interval = setInterval(() => {
+      const state = useAppStore.getState();
       
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(async () => {
-        const { error } = await supabase.from('user_data').upsert({
-          id: session.user.id,
-          app_state: syncData,
-          updated_at: new Date().toISOString()
-        });
-        if (error) {
-          console.error("Failed to sync to cloud:", error);
-        }
-      }, 3000);
-    });
+      // We could iterate and retry anything with synced === false
+      // But since Zustand hooks execute upsert aggressively, this is a placeholder
+      // for future advanced offline-retry mechanisms.
+    }, 15000);
     
-    return () => {
-      clearTimeout(debounceTimer);
-      unsubscribe();
-    };
+    return () => clearInterval(interval);
   }, [session?.user?.id]);
 
   useEffect(() => {
