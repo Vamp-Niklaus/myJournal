@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CalendarDays, FolderOpen, Mail } from 'lucide-react';
 import { DailyDiary } from '@/components/modules/DailyDiary';
 import { AssetOrganizer } from '@/components/modules/AssetOrganizer';
+import { useAppStore } from '@/store/useAppStore';
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -40,6 +41,9 @@ function AppContent() {
     router.push(`${pathname}?${current.toString()}`);
   };
 
+  const setFullState = useAppStore(state => state.setFullState);
+  const resetState = useAppStore(state => state.resetState);
+
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       // Prevent Next.js overlay from crashing on object rejections (e.g. Monaco editor cancelation)
@@ -50,16 +54,37 @@ function AppContent() {
     };
     window.addEventListener('unhandledrejection', handleUnhandledRejection, true);
     
+    const fetchCloudData = async (userId: string) => {
+      const { data, error } = await supabase
+        .from('user_data')
+        .select('app_state')
+        .eq('id', userId)
+        .single();
+      if (data && data.app_state) {
+        setFullState(data.app_state);
+      } else if (error && error.code !== 'PGRST116') {
+        console.error("Failed to fetch cloud data:", error);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setLoading(false);
+      if (session) {
+        fetchCloudData(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      setLoading(false);
+      if (session && event === 'SIGNED_IN') {
+        fetchCloudData(session.user.id);
+      } else if (!session) {
+        resetState();
+      }
     });
 
     return () => {
@@ -67,6 +92,37 @@ function AppContent() {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection, true);
     };
   }, []);
+
+  // Sync to cloud on state changes
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    
+    let debounceTimer: NodeJS.Timeout;
+    const unsubscribe = useAppStore.subscribe((state) => {
+      const syncData = {
+        fileSystem: state.fileSystem,
+        notes: state.notes,
+        diaryEntries: state.diaryEntries,
+      };
+      
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        const { error } = await supabase.from('user_data').upsert({
+          id: session.user.id,
+          app_state: syncData,
+          updated_at: new Date().toISOString()
+        });
+        if (error) {
+          console.error("Failed to sync to cloud:", error);
+        }
+      }, 3000);
+    });
+    
+    return () => {
+      clearTimeout(debounceTimer);
+      unsubscribe();
+    };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;

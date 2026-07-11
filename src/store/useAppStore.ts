@@ -48,6 +48,9 @@ interface AppState {
   
   updateNote: (id: string, content: Partial<NoteContent>) => void;
   updateDiaryEntry: (dateKey: string, content: Partial<NoteContent>) => void;
+  
+  setFullState: (state: Pick<AppState, 'fileSystem' | 'notes' | 'diaryEntries'>) => void;
+  resetState: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -76,6 +79,38 @@ export const useAppStore = create<AppState>()(
       notes: {},
       clipboard: null,
       diaryEntries: {},
+
+      setFullState: (newState) => set((state) => ({
+        fileSystem: newState.fileSystem,
+        notes: newState.notes,
+        diaryEntries: newState.diaryEntries,
+      })),
+
+      resetState: () => set({
+        fileSystem: {
+          'root': {
+            id: 'root',
+            name: 'Root',
+            type: 'folder',
+            parentId: null,
+            childrenIds: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          'trash': {
+            id: 'trash',
+            name: 'Trash',
+            type: 'folder',
+            parentId: null,
+            childrenIds: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        },
+        notes: {},
+        diaryEntries: {},
+        clipboard: null,
+      }),
 
       addNode: (node) => set((state) => {
         const newFs = { ...state.fileSystem, [node.id]: node };
