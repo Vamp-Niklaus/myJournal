@@ -130,7 +130,7 @@ const syncNoteToCloud = async (note: NoteContent, set: any, isDiary: boolean) =>
       }));
     }
   } catch (error) {
-    console.error(Failed to sync  + (isDiary ? 'diary entry' : 'note') + :, note.id, error);
+    console.error('Failed to sync ' + (isDiary ? 'diary entry' : 'note') + ':', note.id, error);
     const stateKey = isDiary ? 'diaryEntries' : 'notes';
     set((state: any) => ({
       [stateKey]: { ...state[stateKey], [note.id]: { ...state[stateKey][note.id], synced: false } }
