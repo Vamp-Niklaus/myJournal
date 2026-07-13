@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { Folder, Link as LinkIcon, FileText, ChevronRight, ChevronDown, Plus, MoreVertical, Search, Trash2, ArrowLeft, X, Eye } from 'lucide-react';
+import { Folder, Link as LinkIcon, FileText, ChevronRight, ChevronDown, Plus, MoreVertical, Search, Trash2, ArrowLeft, X, Eye, LayoutGrid, List } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
@@ -76,6 +76,7 @@ export function AssetOrganizer() {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createType, setCreateType] = useState<'folder' | 'note' | 'link' | null>(null);
@@ -304,6 +305,13 @@ export function AssetOrganizer() {
                 </button>
               )}
             </div>
+            <button
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="p-1.5 sm:ml-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors border border-transparent hover:border-zinc-700 !cursor-pointer flex-shrink-0"
+              title={`Switch to ${viewMode === 'grid' ? 'List' : 'Grid'} view`}
+            >
+              {viewMode === 'grid' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+            </button>
           </div>
         </div>
 
@@ -335,7 +343,7 @@ export function AssetOrganizer() {
             <ContextMenu>
               <ContextMenuTrigger className="absolute inset-0 flex flex-col overflow-auto p-4 z-0 block">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 flex-1 content-start w-full">
+                  <div className={viewMode === 'grid' ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 flex-1 content-start w-full" : "flex flex-col gap-2 flex-1 w-full"}>
                   {childrenNodes.map((node) => (
                     <ContextMenu key={node.id}>
                       <ContextMenuTrigger className="block w-full">
@@ -348,7 +356,7 @@ export function AssetOrganizer() {
                               {node.type === 'link' && <LinkIcon className="w-8 h-8 text-emerald-400 cursor-pointer pointer-events-auto flex-shrink-0" onClick={(e) => { e.stopPropagation(); window.open(node.url, '_blank'); }} />}
                               {node.type === 'note' && <FileText className="w-8 h-8 text-amber-400 flex-shrink-0" />}
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-zinc-200 truncate">{node.name}</p>
+                                <p className={`font-medium text-zinc-200 ${viewMode === 'grid' ? 'truncate' : 'break-words'}`}>{node.name}</p>
                                 <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider">{node.type}</p>
                               </div>
                               {searchQuery.trim() && (
